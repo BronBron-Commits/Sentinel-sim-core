@@ -9,6 +9,7 @@ include_directories(include)
 add_library(simcore
     src/sim_update.cpp
     src/sim_runner.cpp
+    src/sim_hash.cpp
 )
 
 add_executable(sentinel-sim-core
