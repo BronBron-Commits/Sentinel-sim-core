@@ -1,25 +1,29 @@
 #include <iostream>
-#include "sim_runner.hpp"
+#include <cassert>
+
+#include "sim_state.hpp"
+#include "sim_update.hpp"
 #include "sim_hash.hpp"
 
 int main() {
+    constexpr double dt = 0.016;
+    constexpr int ticks = 1000;
+
     SimState state{};
-    SimRunner runner{};
+    state.time = 0.0;
 
-    constexpr double FIXED_DT = 0.016;
-    constexpr int STEPS = 1000;
-
-    for (int i = 0; i < STEPS; ++i) {
-        sim_step(runner, state, FIXED_DT, FIXED_DT);
+    for (int i = 0; i < ticks; ++i) {
+        sim_update(state, dt);
     }
 
-    uint64_t h = hash_state(state);
+    uint64_t h = sim_hash(state);
 
-    std::cout << "ticks=" << runner.tick
-              << " sim_time=" << runner.sim_time
+    std::cout << "ticks=" << ticks
+              << " sim_time=" << ticks * dt
               << " state.time=" << state.time
-              << " hash=0x" << std::hex << h
-              << std::dec << "\n";
+              << " hash=0x" << std::hex << h << std::dec << "\n";
+
+    assert(state.time == ticks * dt);
 
     return 0;
 }

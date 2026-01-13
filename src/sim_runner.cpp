@@ -25,3 +25,15 @@ void sim_step(
         runner.accumulator = 0.0;
     }
 }
+
+unsigned long long sim_run_ticks(
+    SimState& state,
+    unsigned long long start_tick,
+    unsigned long long ticks,
+    double dt
+) {
+    for (unsigned long long i = 0; i < ticks; ++i) {
+        sim_update(state, dt);
+    }
+    return start_tick + ticks;
+}

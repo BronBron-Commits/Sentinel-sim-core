@@ -13,3 +13,10 @@ void sim_step(
     double real_dt,
     double fixed_dt
 );
+
+unsigned long long sim_run_ticks(
+    SimState& state,
+    unsigned long long start_tick,
+    unsigned long long ticks,
+    double dt
+);

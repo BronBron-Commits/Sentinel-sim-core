@@ -23,3 +23,6 @@ add_executable(test_determinism
 )
 
 target_link_libraries(test_determinism simcore)
+
+add_executable(test_rewind tests/test_rewind.cpp)
+target_link_libraries(test_rewind simcore)
