@@ -3,7 +3,6 @@ project(sentinel-sim-core LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # ----------------------------
 # Core library
@@ -64,21 +63,27 @@ add_executable(sentinel-sim-visual
 target_include_directories(sentinel-sim-visual PRIVATE ${SDL2_INCLUDE_DIRS})
 target_link_libraries(sentinel-sim-visual simcore ${SDL2_LIBRARIES})
 
+
+# ----------------------------
+# GLES side-by-side (Termux / X11 / EGL)
+# ----------------------------
+pkg_check_modules(EGL REQUIRED egl)
+pkg_check_modules(GLES2 REQUIRED glesv2)
+pkg_check_modules(X11 REQUIRED x11)
+
 add_executable(sentinel-sim-side-by-side
-
     visual/side_by_side.cpp
+)
 
+target_include_directories(sentinel-sim-side-by-side PRIVATE
+    ${EGL_INCLUDE_DIRS}
+    ${GLES2_INCLUDE_DIRS}
+    ${X11_INCLUDE_DIRS}
 )
 
 target_link_libraries(sentinel-sim-side-by-side
-
     simcore
-
-    X11
-
-    EGL
-
-    GLESv2
-
+    ${EGL_LIBRARIES}
+    ${GLES2_LIBRARIES}
+    ${X11_LIBRARIES}
 )
-
