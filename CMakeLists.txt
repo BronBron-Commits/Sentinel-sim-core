@@ -23,7 +23,7 @@ target_compile_definitions(simcore
 
 target_include_directories(simcore
     PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
 )
 
@@ -63,34 +63,3 @@ add_test(NAME rollback_network COMMAND test_rollback_network)
 add_executable(test_invariant_violation tests/test_invariant_violation.cpp)
 target_link_libraries(test_invariant_violation simcore)
 add_test(NAME invariant_violation COMMAND test_invariant_violation)
-
-# ==============================
-# Visuals (platform layer)
-# ==============================
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(SDL2 REQUIRED sdl2)
-pkg_check_modules(EGL REQUIRED egl)
-pkg_check_modules(GLESV2 REQUIRED glesv2)
-pkg_check_modules(X11 REQUIRED x11)
-
-add_executable(sentinel-sim-visual
-    visual/main.cpp
-)
-target_link_libraries(sentinel-sim-visual
-    simcore
-    ${SDL2_LIBRARIES}
-    ${EGL_LIBRARIES}
-    ${GLESV2_LIBRARIES}
-    ${X11_LIBRARIES}
-)
-
-add_executable(sentinel-sim-side-by-side
-    visual/side_by_side.cpp
-)
-target_link_libraries(sentinel-sim-side-by-side
-    simcore
-    ${SDL2_LIBRARIES}
-    ${EGL_LIBRARIES}
-    ${GLESV2_LIBRARIES}
-    ${X11_LIBRARIES}
-)
