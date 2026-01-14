@@ -87,3 +87,7 @@ target_link_libraries(sentinel-sim-side-by-side
     ${GLES2_LIBRARIES}
     ${X11_LIBRARIES}
 )
+
+add_executable(test_invariant_violation tests/test_invariant_violation.cpp)
+target_link_libraries(test_invariant_violation simcore)
+add_test(NAME invariant_violation COMMAND test_invariant_violation)
