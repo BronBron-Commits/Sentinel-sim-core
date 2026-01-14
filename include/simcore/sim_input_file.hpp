@@ -1,3 +1,4 @@
+#include <simcore/platform_guard.hpp>
 #pragma once
 #include <cstdint>
 

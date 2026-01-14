@@ -1,9 +1,7 @@
+#include <simcore/simcore.hpp>
 #include <iostream>
 #include <cassert>
 
-#include "sim_state.hpp"
-#include "sim_update.hpp"
-#include "sim_hash.hpp"
 
 /*
     INVARIANT VIOLATION TEST

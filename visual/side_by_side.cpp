@@ -6,9 +6,9 @@
 #include <cstdio>
 #include <cstdint>
 
-#include "sim_state.hpp"
-#include "sim_update.hpp"
-#include "sim_hash.hpp"
+#include <simcore/sim_state.hpp>
+#include <simcore/sim_update.hpp>
+#include <simcore/sim_hash.hpp>
 
 static const char *vs_src =
     "attribute vec2 aPos;\n"

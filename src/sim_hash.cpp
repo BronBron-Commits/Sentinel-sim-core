@@ -1,4 +1,4 @@
-#include "sim_hash.hpp"
+#include <simcore/sim_hash.hpp>
 
 // Simple deterministic 64-bit mix (FNV-style)
 static inline uint64_t mix(uint64_t h, uint64_t v) {

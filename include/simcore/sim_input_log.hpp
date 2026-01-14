@@ -1,8 +1,9 @@
+#include <simcore/platform_guard.hpp>
 #pragma once
 #include <vector>
 #include <algorithm>
 #include <cstdint>
-#include "sim_input.hpp"
+#include <simcore/sim_input.hpp>
 
 struct SimInputLog {
     std::vector<SimInputEvent> events;

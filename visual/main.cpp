@@ -1,8 +1,9 @@
 #include <SDL2/SDL.h>
 #include <iostream>
 
-#include "sim_state.hpp"
-#include "sim_update.hpp"
+#include <simcore/sim_state.hpp>
+#include <simcore/sim_update.hpp>
+
 
 static int to_pixels(const Fixed& v, int scale = 1000) {
     return static_cast<int>(v.to_double() * scale);
@@ -57,7 +58,6 @@ int main(int argc, char** argv) {
         SDL_RenderFillRect(renderer, &dot);
 
         SDL_RenderPresent(renderer);
-
         SDL_Delay(16);
     }
 

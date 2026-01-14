@@ -1,6 +1,7 @@
+#include <simcore/platform_guard.hpp>
 #pragma once
-#include "sim_snapshot.hpp"
-#include "sim_state.hpp"
+#include <simcore/sim_snapshot.hpp>
+#include <simcore/sim_state.hpp>
 
 inline SimSnapshot snapshot_state(const SimState& s) {
     SimSnapshot snap{};

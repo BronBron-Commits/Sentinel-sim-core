@@ -1,6 +1,6 @@
-#include "sim_input_io.hpp"
-#include "sim_input_log.hpp"
-#include "sim_input.hpp"
+#include <simcore/sim_input_io.hpp>
+#include <simcore/sim_input_log.hpp>
+#include <simcore/sim_input.hpp>
 
 #include <fstream>
 #include <algorithm>

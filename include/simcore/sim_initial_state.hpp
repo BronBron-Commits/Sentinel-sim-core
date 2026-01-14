@@ -1,5 +1,6 @@
+#include <simcore/platform_guard.hpp>
 #pragma once
-#include "sim_state.hpp"
+#include <simcore/sim_state.hpp>
 
 // Canonical deterministic starting state
 inline SimState sim_initial_state() {

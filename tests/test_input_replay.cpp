@@ -1,10 +1,7 @@
+#include <simcore/simcore.hpp>
 #include <cassert>
 #include <iostream>
 
-#include "sim_initial_state.hpp"
-#include "sim_input_log.hpp"
-#include "sim_run_with_input.hpp"
-#include "sim_hash.hpp"
 
 int main() {
     SimState a = sim_initial_state();

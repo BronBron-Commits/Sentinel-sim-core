@@ -1,9 +1,7 @@
+#include <simcore/simcore.hpp>
 #include <cassert>
 #include <iostream>
 
-#include "sim_state.hpp"
-#include "sim_update.hpp"
-#include "sim_hash.hpp"
 
 int main() {
     SimState state1{};
