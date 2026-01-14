@@ -5,20 +5,26 @@
 
 #include "sim_state.hpp"
 #include "sim_update.hpp"
+#include "sim_hash.hpp"
 
+// --------------------------------------------------
+// Shaders
+// --------------------------------------------------
 static const char *vs_src =
     "attribute vec2 aPos;\n"
     "void main() {\n"
     "  gl_Position = vec4(aPos, 0.0, 1.0);\n"
-    "  gl_PointSize = 32.0;\n"   // FORCE LARGE
+    "  gl_PointSize = 32.0;\n"
     "}\n";
 
 static const char *fs_src =
     "precision mediump float;\n"
+    "uniform vec4 uColor;\n"
     "void main() {\n"
-    "  gl_FragColor = vec4(0.2, 0.9, 1.0, 1.0);\n"
+    "  gl_FragColor = uColor;\n"
     "}\n";
 
+// --------------------------------------------------
 static GLuint compile(GLenum type, const char *src) {
     GLuint s = glCreateShader(type);
     glShaderSource(s, 1, &src, nullptr);
@@ -39,6 +45,7 @@ static GLuint make_program() {
     return p;
 }
 
+// --------------------------------------------------
 int main() {
     Display *dpy = XOpenDisplay(nullptr);
     Window root = DefaultRootWindow(dpy);
@@ -74,7 +81,7 @@ int main() {
     );
 
     XMapWindow(dpy, win);
-    XStoreName(dpy, win, "Sentinel Sim – Side by Side");
+    XStoreName(dpy, win, "Sentinel Sim – Hash View");
 
     EGLSurface surf =
         eglCreateWindowSurface(egl_dpy, cfg,
@@ -92,18 +99,25 @@ int main() {
 
     GLuint prog = make_program();
     GLuint vbo;
-
     glGenBuffers(1, &vbo);
 
     glUseProgram(prog);
     glEnableVertexAttribArray(0);
 
-    // SIM STATE
+    GLint uColor = glGetUniformLocation(prog, "uColor");
+
+    // --------------------------------------------------
+    // Deterministic simulation state
+    // --------------------------------------------------
     SimState left{};
     SimState right{};
 
-    left.vx  = Fixed::from_int(1);
-    right.vx = Fixed::from_int(-1);
+    // Start IDENTICAL
+    left.vx = Fixed::from_int(1);
+    right.vx = Fixed::from_int(1);
+
+    uint64_t frame = 0;
+    static constexpr uint64_t DIVERGE_AT = 120; // ~2 seconds @60Hz
 
     auto clamp = [](float v) {
         if (v < -0.9f) return -0.9f;
@@ -111,6 +125,7 @@ int main() {
         return v;
     };
 
+    // --------------------------------------------------
     while (true) {
         while (XPending(dpy)) {
             XEvent e;
@@ -119,8 +134,21 @@ int main() {
                 return 0;
         }
 
+        // Inject divergence ONCE, deterministically
+        if (frame == DIVERGE_AT) {
+            right.vx = Fixed::from_int(-1);
+        }
+
         sim_update(left);
         sim_update(right);
+
+        bool hashes_equal = (sim_hash(left) == sim_hash(right));
+
+        if (hashes_equal) {
+            glUniform4f(uColor, 0.2f, 1.0f, 0.2f, 1.0f); // GREEN
+        } else {
+            glUniform4f(uColor, 1.0f, 0.2f, 0.2f, 1.0f); // RED
+        }
 
         float lx = clamp(left.x.to_double() * 0.002f);
         float rx = clamp(right.x.to_double() * 0.002f);
@@ -135,7 +163,7 @@ int main() {
         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
         glViewport(0, 0, 640, 480);
-        glDisable(GL_DEPTH_TEST);          // CRITICAL
+        glDisable(GL_DEPTH_TEST);
         glClearColor(0.05f, 0.05f, 0.08f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
@@ -143,5 +171,6 @@ int main() {
         eglSwapBuffers(egl_dpy, surf);
 
         usleep(16000);
+        ++frame;
     }
 }
