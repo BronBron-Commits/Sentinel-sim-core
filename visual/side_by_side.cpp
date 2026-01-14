@@ -147,3 +147,33 @@ int main() {
         usleep(16000);
     }
 }
+
+// --------------------------------------------------
+// Static origin crosshair (visual invariant)
+// --------------------------------------------------
+static void draw_origin_crosshair(GLuint prog) {
+    static GLuint cross_vbo = 0;
+
+    if (!cross_vbo) {
+        float cross[8] = {
+            -1.0f,  0.0f,
+             1.0f,  0.0f,
+             0.0f, -1.0f,
+             0.0f,  1.0f
+        };
+
+        glGenBuffers(1, &cross_vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, cross_vbo);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(cross), cross, GL_STATIC_DRAW);
+    }
+
+    glUseProgram(prog);
+    glBindBuffer(GL_ARRAY_BUFFER, cross_vbo);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+    // Dim gray
+    glDisable(GL_BLEND);
+    glLineWidth(1.0f);
+    glDrawArrays(GL_LINES, 0, 4);
+}
