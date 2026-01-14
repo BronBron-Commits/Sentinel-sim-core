@@ -1,6 +1,7 @@
+#include <simcore/platform_guard.hpp>
 #pragma once
-#include "sim_state.hpp"
-#include "sim_input.hpp"
+#include <simcore/sim_state.hpp>
+#include <simcore/sim_input.hpp>
 
 // Apply a single deterministic input event to state
 inline void sim_apply_input(SimState& state, const SimInputEvent& e) {

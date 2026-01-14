@@ -1,8 +1,9 @@
+#include <simcore/platform_guard.hpp>
 #pragma once
 #include <unordered_map>
-#include "sim_state.hpp"
-#include "sim_input_log.hpp"
-#include "sim_snapshot.hpp"
+#include <simcore/sim_state.hpp>
+#include <simcore/sim_input_log.hpp>
+#include <simcore/sim_snapshot.hpp>
 
 struct PeerState {
     SimState state;

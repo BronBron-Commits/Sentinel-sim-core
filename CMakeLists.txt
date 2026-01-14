@@ -1,12 +1,14 @@
 cmake_minimum_required(VERSION 3.16)
-project(sentinel-sim-core LANGUAGES CXX)
+project(sentinel_sim_core LANGUAGES C CXX)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# ----------------------------
-# Core library
-# ----------------------------
+enable_testing()
+
+# ==============================
+# simcore library (STRICT PUBLIC API)
+# ==============================
 add_library(simcore
     src/sim_update.cpp
     src/sim_runner.cpp
@@ -14,23 +16,30 @@ add_library(simcore
     src/sim_input_io.cpp
 )
 
-target_include_directories(simcore PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
+# 🔒 Enforce platform isolation ONLY while building simcore
+target_compile_definitions(simcore
+    PRIVATE SIMCORE_NO_PLATFORM_HEADERS
 )
 
-# ----------------------------
-# CLI demo
-# ----------------------------
+target_include_directories(simcore
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+)
+
+target_compile_features(simcore PUBLIC cxx_std_17)
+
+# ==============================
+# Main executable
+# ==============================
 add_executable(sentinel-sim-core
     src/main.cpp
 )
 target_link_libraries(sentinel-sim-core simcore)
 
-# ----------------------------
+# ==============================
 # Tests
-# ----------------------------
-enable_testing()
-
+# ==============================
 add_executable(test_determinism tests/test_determinism.cpp)
 target_link_libraries(test_determinism simcore)
 add_test(NAME determinism COMMAND test_determinism)
@@ -51,43 +60,37 @@ add_executable(test_rollback_network tests/test_rollback_network.cpp)
 target_link_libraries(test_rollback_network simcore)
 add_test(NAME rollback_network COMMAND test_rollback_network)
 
-# ----------------------------
-# SDL Visualizations
-# ----------------------------
+add_executable(test_invariant_violation tests/test_invariant_violation.cpp)
+target_link_libraries(test_invariant_violation simcore)
+add_test(NAME invariant_violation COMMAND test_invariant_violation)
+
+# ==============================
+# Visuals (platform layer)
+# ==============================
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(SDL2 REQUIRED sdl2)
+pkg_check_modules(EGL REQUIRED egl)
+pkg_check_modules(GLESV2 REQUIRED glesv2)
+pkg_check_modules(X11 REQUIRED x11)
 
 add_executable(sentinel-sim-visual
     visual/main.cpp
 )
-target_include_directories(sentinel-sim-visual PRIVATE ${SDL2_INCLUDE_DIRS})
-target_link_libraries(sentinel-sim-visual simcore ${SDL2_LIBRARIES})
-
-
-# ----------------------------
-# GLES side-by-side (Termux / X11 / EGL)
-# ----------------------------
-pkg_check_modules(EGL REQUIRED egl)
-pkg_check_modules(GLES2 REQUIRED glesv2)
-pkg_check_modules(X11 REQUIRED x11)
+target_link_libraries(sentinel-sim-visual
+    simcore
+    ${SDL2_LIBRARIES}
+    ${EGL_LIBRARIES}
+    ${GLESV2_LIBRARIES}
+    ${X11_LIBRARIES}
+)
 
 add_executable(sentinel-sim-side-by-side
     visual/side_by_side.cpp
 )
-
-target_include_directories(sentinel-sim-side-by-side PRIVATE
-    ${EGL_INCLUDE_DIRS}
-    ${GLES2_INCLUDE_DIRS}
-    ${X11_INCLUDE_DIRS}
-)
-
 target_link_libraries(sentinel-sim-side-by-side
     simcore
+    ${SDL2_LIBRARIES}
     ${EGL_LIBRARIES}
-    ${GLES2_LIBRARIES}
+    ${GLESV2_LIBRARIES}
     ${X11_LIBRARIES}
 )
-
-add_executable(test_invariant_violation tests/test_invariant_violation.cpp)
-target_link_libraries(test_invariant_violation simcore)
-add_test(NAME invariant_violation COMMAND test_invariant_violation)

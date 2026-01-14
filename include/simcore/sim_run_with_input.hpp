@@ -1,8 +1,9 @@
+#include <simcore/platform_guard.hpp>
 #pragma once
-#include "sim_state.hpp"
-#include "sim_input_log.hpp"
-#include "sim_apply_input.hpp"
-#include "sim_update.hpp"
+#include <simcore/sim_state.hpp>
+#include <simcore/sim_input_log.hpp>
+#include <simcore/sim_apply_input.hpp>
+#include <simcore/sim_update.hpp>
 
 inline void sim_run_with_input(
     SimState& state,

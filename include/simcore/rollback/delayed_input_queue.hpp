@@ -1,6 +1,7 @@
+#include <simcore/platform_guard.hpp>
 #pragma once
 #include <vector>
-#include "sim_input.hpp"
+#include <simcore/sim_input.hpp>
 
 struct DelayedInput {
     SimInputEvent event;

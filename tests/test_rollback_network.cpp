@@ -1,10 +1,7 @@
+#include <simcore/simcore.hpp>
 #include <iostream>
 #include <cstdint>
 
-#include "sim_state.hpp"
-#include "sim_input_log.hpp"
-#include "sim_run_with_input.hpp"
-#include "sim_hash.hpp"
 
 /*
     Rollback Network Test
