@@ -1,14 +1,15 @@
-#include <SDL2/SDL.h>
-#include <iostream>
+#include <SDL.h>
 #include <cstdint>
+#include <iostream>
 
 #include "sim_state.hpp"
 #include "sim_update.hpp"
 #include "sim_hash.hpp"
+#include "sim_snapshot.hpp"
 #include "sim_snapshot_ops.hpp"
 
 static int fx(const Fixed& v) {
-    return static_cast<int>(v.to_double() * 10.0);
+    return static_cast<int>(v.raw / 1000);
 }
 
 static void draw_dot(SDL_Renderer* r, int x, int y, SDL_Color c) {
@@ -21,7 +22,7 @@ int main() {
     SDL_Init(SDL_INIT_VIDEO);
 
     SDL_Window* window = SDL_CreateWindow(
-        "Sentinel Rollback Visualization",
+        "Deterministic Rollback Demo",
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
         640, 480,
@@ -37,9 +38,14 @@ int main() {
     left.vx  = Fixed::from_int(1);
     right.vx = Fixed::from_int(1);
 
-    SimSnapshot snap{};
-    bool diverged  = false;
-    bool converged = false;
+    SimSnapshot snapshot{};
+    bool snapshot_taken = false;
+    bool diverged       = false;
+    bool rolled_back    = false;
+
+    constexpr int SNAPSHOT_FRAME  = 40;
+    constexpr int DIVERGE_FRAME   = 60;
+    constexpr int ROLLBACK_FRAME  = 120;
 
     for (int frame = 0; frame < 240; ++frame) {
         SDL_Event e;
@@ -50,26 +56,31 @@ int main() {
         sim_update(left);
         sim_update(right);
 
-        if (frame == 50 && !diverged) {
-            snap = snapshot_state(left);
+        if (frame == SNAPSHOT_FRAME && !snapshot_taken) {
+            snapshot = snapshot_state(left);
+            snapshot_taken = true;
+        }
+
+        if (frame == DIVERGE_FRAME && !diverged) {
             std::cout << "[INJECT] divergence injected\n";
             right.x += Fixed::from_int(20);
             diverged = true;
         }
 
-        if (frame == 120 && !converged) {
+        if (frame == ROLLBACK_FRAME && !rolled_back) {
             std::cout << "[ROLLBACK] restoring snapshot\n";
-            restore_state(right, snap);
-            converged = true;
+            restore_state(left,  snapshot);
+            restore_state(right, snapshot);
+            rolled_back = true;
         }
 
         SDL_SetRenderDrawColor(renderer, 20, 20, 20, 255);
         SDL_RenderClear(renderer);
 
         SDL_Color color =
-            converged ? SDL_Color{0, 255, 0, 255}
-                      : diverged ? SDL_Color{255, 0, 0, 255}
-                                 : SDL_Color{0, 200, 255, 255};
+            rolled_back ? SDL_Color{0, 255, 0, 255} :
+            diverged    ? SDL_Color{255, 0, 0, 255} :
+                          SDL_Color{0, 200, 255, 255};
 
         draw_dot(renderer, 160 + fx(left.x),  240 + fx(left.y),  color);
         draw_dot(renderer, 480 + fx(right.x), 240 + fx(right.y), color);
