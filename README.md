@@ -104,7 +104,7 @@ cmake --build build
 ./build/test_input_replay
 ./build/test_input_file_replay
 
-
+```
 ---
 
 Intended Use Cases
