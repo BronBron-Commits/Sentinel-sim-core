@@ -29,3 +29,14 @@ target_link_libraries(test_rewind simcore)
 
 add_executable(test_input_replay tests/test_input_replay.cpp)
 target_link_libraries(test_input_replay simcore)
+
+# Input log binary I/O
+target_sources(simcore PRIVATE
+    src/sim_input_io.cpp
+)
+
+# Binary replay test
+add_executable(test_input_file_replay
+    tests/test_input_file_replay.cpp
+)
+target_link_libraries(test_input_file_replay simcore)
