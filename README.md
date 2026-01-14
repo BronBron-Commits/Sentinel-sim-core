@@ -200,37 +200,6 @@ But implemented as a small, auditable, correctness‑first C++ core.
 
 ---
 
-Career relevance
-
-This project demonstrates:
-
-Systems programming discipline
-
-Determinism & reproducibility
-
-State verification
-
-Simulation correctness
-
-Rollback architecture
-
-
-These map directly to roles in:
-
-Defense & aerospace
-
-Autonomous systems
-
-Robotics simulation
-
-Distributed systems
-
-Low‑level engine development
-
-
-
----
-
 License
 
 MIT
