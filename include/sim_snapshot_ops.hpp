@@ -1,12 +1,13 @@
 #pragma once
 #include "sim_snapshot.hpp"
+#include "sim_state.hpp"
 
-// Capture current simulation state
-inline SimSnapshot sim_take_snapshot(const SimState& state, unsigned long long tick) {
-    return SimSnapshot{ state, tick };
+inline SimSnapshot snapshot_state(const SimState& s) {
+    SimSnapshot snap{};
+    snap.state = s;
+    return snap;
 }
 
-// Restore simulation state
-inline void sim_restore_snapshot(SimState& state, const SimSnapshot& snap) {
-    state = snap.state;
+inline void restore_state(SimState& s, const SimSnapshot& snap) {
+    s = snap.state;
 }

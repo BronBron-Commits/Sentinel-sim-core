@@ -1,45 +1,48 @@
-#include <iostream>
 #include <cassert>
+#include <iostream>
 
 #include "sim_state.hpp"
 #include "sim_update.hpp"
 #include "sim_snapshot.hpp"
 #include "sim_snapshot_ops.hpp"
-#include "sim_runner.hpp"
 #include "sim_hash.hpp"
 
 int main() {
-    constexpr double dt = 0.016;
-    constexpr unsigned long long total_ticks = 1000;
-    constexpr unsigned long long rewind_tick = 400;
-
     SimState state{};
-    state.time = 0.0;
 
-    unsigned long long tick = 0;
+    const uint64_t pre_steps  = 500;
+    const uint64_t post_steps = 500;
 
-    // Run to rewind point
-    tick = sim_run_ticks(state, tick, rewind_tick, dt);
+    // Run forward
+    for (uint64_t i = 0; i < pre_steps; ++i) {
+        sim_update(state);
+    }
 
-    // Take snapshot
-    SimSnapshot snap = sim_take_snapshot(state, tick);
+    // Snapshot
+    SimSnapshot snap = snapshot_state(state);
 
-    // Run to end
-    tick = sim_run_ticks(state, tick, total_ticks - rewind_tick, dt);
-    auto hash_full = sim_hash(state);
+    // Run further
+    for (uint64_t i = 0; i < post_steps; ++i) {
+        sim_update(state);
+    }
+
+    uint64_t full_hash = sim_hash(state);
 
     // Rewind
-    sim_restore_snapshot(state, snap);
-    tick = snap.tick;
+    restore_state(state, snap);
 
     // Replay
-    tick = sim_run_ticks(state, tick, total_ticks - rewind_tick, dt);
-    auto hash_replay = sim_hash(state);
+    for (uint64_t i = 0; i < post_steps; ++i) {
+        sim_update(state);
+    }
 
-    std::cout << "full=0x" << std::hex << hash_full
-              << " replay=0x" << hash_replay << std::dec << "\n";
+    uint64_t replay_hash = sim_hash(state);
 
-    assert(hash_full == hash_replay && "Replay hash mismatch!");
+    std::cout
+        << "full=0x" << std::hex << full_hash
+        << " replay=0x" << replay_hash << std::dec
+        << "\n";
 
+    assert(full_hash == replay_hash);
     return 0;
 }

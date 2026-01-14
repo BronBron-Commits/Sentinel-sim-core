@@ -1,29 +1,30 @@
-#include <iostream>
 #include <cassert>
+#include <iostream>
 
 #include "sim_state.hpp"
 #include "sim_update.hpp"
 #include "sim_hash.hpp"
 
 int main() {
-    constexpr double dt = 0.016;
-    constexpr int ticks = 1000;
+    SimState state1{};
+    SimState state2{};
 
-    SimState state{};
-    state.time = 0.0;
+    const uint64_t steps = 2000;
 
-    for (int i = 0; i < ticks; ++i) {
-        sim_update(state, dt);
+    for (uint64_t i = 0; i < steps; ++i) {
+        sim_update(state1);
+        sim_update(state2);
     }
 
-    uint64_t h = sim_hash(state);
+    uint64_t h1 = sim_hash(state1);
+    uint64_t h2 = sim_hash(state2);
 
-    std::cout << "ticks=" << ticks
-              << " sim_time=" << ticks * dt
-              << " state.time=" << state.time
-              << " hash=0x" << std::hex << h << std::dec << "\n";
+    std::cout
+        << "ticks=" << steps
+        << " hash1=0x" << std::hex << h1
+        << " hash2=0x" << h2 << std::dec
+        << "\n";
 
-    assert(state.time == ticks * dt);
-
+    assert(h1 == h2);
     return 0;
 }

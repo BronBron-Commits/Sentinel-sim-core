@@ -1,20 +1,17 @@
 #pragma once
 #include "sim_state.hpp"
-#include "sim_update.hpp"
 #include "sim_input_log.hpp"
 #include "sim_apply_input.hpp"
+#include "sim_update.hpp"
 
-inline uint64_t sim_run_with_input(
+inline void sim_run_with_input(
     SimState& state,
-    uint64_t start_tick,
     uint64_t ticks,
-    double dt,
     const SimInputLog& log
 ) {
-    uint64_t tick = start_tick;
     size_t input_index = 0;
 
-    for (uint64_t i = 0; i < ticks; ++i, ++tick) {
+    for (uint64_t tick = 0; tick < ticks; ++tick) {
 
         while (input_index < log.events.size() &&
                log.events[input_index].tick == tick) {
@@ -22,8 +19,7 @@ inline uint64_t sim_run_with_input(
             ++input_index;
         }
 
-        sim_update(state, dt);
+        // 🔑 ALWAYS advance simulation
+        sim_update(state);
     }
-
-    return tick;
 }

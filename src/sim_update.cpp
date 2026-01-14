@@ -1,5 +1,4 @@
 #include "sim_update.hpp"
 
-void sim_update(SimState &state, double dt) {
-    state.time += dt;
-}
+// Implementation is inline-only by design.
+// This file exists for build symmetry.

@@ -1,16 +1,21 @@
 #include "sim_hash.hpp"
 
-uint64_t sim_hash(const SimState& state) {
-    const uint64_t prime = 1099511628211ULL;
-    uint64_t hash = 1469598103934665603ULL;
+/* Simple avalanche mixer */
+static inline uint64_t mix(uint64_t x) {
+    x ^= x >> 33;
+    x *= 0xff51afd7ed558ccdULL;
+    x ^= x >> 33;
+    x *= 0xc4ceb9fe1a85ec53ULL;
+    x ^= x >> 33;
+    return x;
+}
 
-    const unsigned char* data =
-        reinterpret_cast<const unsigned char*>(&state);
+uint64_t sim_hash(const SimState& s) {
+    uint64_t h = 0xcbf29ce484222325ULL;
 
-    for (size_t i = 0; i < sizeof(SimState); ++i) {
-        hash ^= data[i];
-        hash *= prime;
-    }
+    h ^= mix(static_cast<uint64_t>(s.x));
+    h ^= mix(static_cast<uint64_t>(s.y));
+    h ^= mix(static_cast<uint64_t>(s.z));
 
-    return hash;
+    return h;
 }

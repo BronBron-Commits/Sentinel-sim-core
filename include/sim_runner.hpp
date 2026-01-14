@@ -1,22 +1,5 @@
 #pragma once
+#include <cstdint>
 #include "sim_state.hpp"
 
-struct SimRunner {
-    double sim_time = 0.0;
-    double accumulator = 0.0;
-    unsigned long tick = 0;
-};
-
-void sim_step(
-    SimRunner& runner,
-    SimState& state,
-    double real_dt,
-    double fixed_dt
-);
-
-unsigned long long sim_run_ticks(
-    SimState& state,
-    unsigned long long start_tick,
-    unsigned long long ticks,
-    double dt
-);
+void run_sim(SimState& state, uint64_t ticks);
