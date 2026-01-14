@@ -26,3 +26,6 @@ target_link_libraries(test_determinism simcore)
 
 add_executable(test_rewind tests/test_rewind.cpp)
 target_link_libraries(test_rewind simcore)
+
+add_executable(test_input_replay tests/test_input_replay.cpp)
+target_link_libraries(test_input_replay simcore)
