@@ -1,131 +1,153 @@
-#include <SDL.h>
-#include <iostream>
+#include <EGL/egl.h>
+#include <GLES2/gl2.h>
+#include <X11/Xlib.h>
+#include <unistd.h>
+#include <cmath>
+#include <cstdio>
+#include <cstdint>
 
 #include "sim_state.hpp"
 #include "sim_update.hpp"
 #include "sim_hash.hpp"
-#include "sim_snapshot.hpp"
-#include "sim_snapshot_ops.hpp"
-#include "sim_input_log.hpp"
-#include "sim_run_with_input.hpp"
 
-static constexpr int WIDTH  = 640;
-static constexpr int HEIGHT = 480;
-static constexpr int SCALE  = 1000;
-static constexpr uint64_t STEPS = 300;
+static const char *vs_src =
+    "attribute vec2 aPos;\n"
+    "void main() {\n"
+    "  gl_Position = vec4(aPos, 0.0, 1.0);\n"
+    "  gl_PointSize = 12.0;\n"
+    "}\n";
+
+static const char *fs_src =
+    "precision mediump float;\n"
+    "uniform vec4 uColor;\n"
+    "void main() {\n"
+    "  gl_FragColor = uColor;\n"
+    "}\n";
+
+static GLuint compile(GLenum type, const char *src) {
+    GLuint s = glCreateShader(type);
+    glShaderSource(s, 1, &src, nullptr);
+    glCompileShader(s);
+    return s;
+}
+
+static GLuint make_program() {
+    GLuint vs = compile(GL_VERTEX_SHADER, vs_src);
+    GLuint fs = compile(GL_FRAGMENT_SHADER, fs_src);
+    GLuint p = glCreateProgram();
+    glAttachShader(p, vs);
+    glAttachShader(p, fs);
+    glBindAttribLocation(p, 0, "aPos");
+    glLinkProgram(p);
+    glDeleteShader(vs);
+    glDeleteShader(fs);
+    return p;
+}
 
 int main() {
-    SDL_Init(SDL_INIT_VIDEO);
+    Display *dpy = XOpenDisplay(nullptr);
+    Window root = DefaultRootWindow(dpy);
 
-    SDL_Window* window = SDL_CreateWindow(
-        "Sentinel Sim – Rollback Repair Demo",
-        SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED,
-        WIDTH,
-        HEIGHT,
-        0
+    EGLDisplay egl_dpy = eglGetDisplay((EGLNativeDisplayType)dpy);
+    eglInitialize(egl_dpy, nullptr, nullptr);
+
+    EGLint cfg_attrs[] = {
+        EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+        EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+        EGL_RED_SIZE, 8, EGL_GREEN_SIZE, 8, EGL_BLUE_SIZE, 8,
+        EGL_NONE
+    };
+
+    EGLConfig cfg;
+    EGLint n;
+    eglChooseConfig(egl_dpy, cfg_attrs, &cfg, 1, &n);
+
+    XSetWindowAttributes swa{};
+    swa.event_mask = ExposureMask | KeyPressMask;
+
+    Window win = XCreateWindow(
+        dpy, root, 0, 0, 640, 480, 0,
+        CopyFromParent, InputOutput,
+        CopyFromParent, CWEventMask, &swa
     );
 
-    SDL_Renderer* renderer =
-        SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    XMapWindow(dpy, win);
+    XStoreName(dpy, win, "Sentinel — initializing…");
 
-    SimState left{};
-    SimState right{};
+    EGLSurface surf =
+        eglCreateWindowSurface(egl_dpy, cfg, (EGLNativeWindowType)win, nullptr);
 
-    SimInputLog full_inputs;
-    for (uint64_t t = 0; t < STEPS; ++t) {
-        full_inputs.events.push_back({t, InputType::MoveX, 1.0});
-    }
+    EGLint ctx_attrs[] = {EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE};
+    EGLContext ctx =
+        eglCreateContext(egl_dpy, cfg, EGL_NO_CONTEXT, ctx_attrs);
 
-    SimSnapshot checkpoint{};
+    eglMakeCurrent(egl_dpy, surf, surf, ctx);
+
+    GLuint prog = make_program();
+    GLint uColor = glGetUniformLocation(prog, "uColor");
+
+    GLuint vbo;
+    glGenBuffers(1, &vbo);
+
+    SimState left{}, right{};
+    right.x = Fixed::from_int(200);
+
     bool injected = false;
-    bool repaired = false;
 
-    bool running = true;
-    uint64_t tick = 0;
-
-    while (running && tick < STEPS) {
-        SDL_Event e;
-        while (SDL_PollEvent(&e)) {
-            if (e.type == SDL_QUIT)
-                running = false;
+    while (true) {
+        while (XPending(dpy)) {
+            XEvent e;
+            XNextEvent(dpy, &e);
+            if (e.type == KeyPress)
+                return 0;
         }
 
-        // Snapshot before divergence
-        if (tick == 80)
-            checkpoint = snapshot_state(right);
+        sim_update(left);
+        sim_update(right);
 
-        // Advance ONE tick using sliced input
-        SimInputLog slice;
-        for (const auto& ev : full_inputs.events) {
-            if (ev.tick == tick)
-                slice.events.push_back(ev);
-        }
-
-        sim_run_with_input(left,  1, slice);
-        sim_run_with_input(right, 1, slice);
-
-        // Inject divergence once
-        if (tick == 120 && !injected) {
-            std::cout << "[INJECT] divergence injected\n";
-            right.x += Fixed::from_int(500);
+        if (!injected && left.tick == 120) {
+            right.x += Fixed::from_int(50);
             injected = true;
         }
 
-        uint64_t hL = sim_hash(left);
-        uint64_t hR = sim_hash(right);
+        uint64_t hl = sim_hash(left);
+        uint64_t hr = sim_hash(right);
+        bool match = (hl == hr);
 
-        // Rollback + replay
-        if (hL != hR && !repaired) {
-            std::cout << "[ROLLBACK] restoring snapshot\n";
-            restore_state(right, checkpoint);
+        char title[256];
+        snprintf(
+            title, sizeof(title),
+            "LEFT: 0x%016lx | RIGHT: 0x%016lx | %s",
+            hl, hr, match ? "MATCH" : "DIVERGED"
+        );
+        XStoreName(dpy, win, title);
 
-            std::cout << "[REPLAY] reapplying inputs\n";
-            for (uint64_t t = 80; t <= tick; ++t) {
-                SimInputLog replay_slice;
-                for (const auto& ev : full_inputs.events) {
-                    if (ev.tick == t)
-                        replay_slice.events.push_back(ev);
-                }
-                sim_run_with_input(right, 1, replay_slice);
-            }
+        float pts[4] = {
+            static_cast<float>(-0.5 + 0.001 * left.x.to_double()),  0.0f,
+            static_cast<float>( 0.5 + 0.001 * right.x.to_double()), 0.0f
+        };
 
-            repaired = true;
-        }
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(pts), pts, GL_DYNAMIC_DRAW);
 
-        // Render
-        SDL_SetRenderDrawColor(renderer, 20, 20, 20, 255);
-        SDL_RenderClear(renderer);
+        glViewport(0, 0, 640, 480);
+        glClearColor(0.05f, 0.05f, 0.08f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
 
-        bool synced = sim_hash(left) == sim_hash(right);
+        glUseProgram(prog);
+        glUniform4f(
+            uColor,
+            match ? 0.2f : 1.0f,
+            match ? 0.9f : 0.2f,
+            0.2f,
+            1.0f
+        );
 
-        if (!synced)
-            SDL_SetRenderDrawColor(renderer, 220, 50, 50, 255);
-        else
-            SDL_SetRenderDrawColor(renderer, 50, 220, 50, 255);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+        glDrawArrays(GL_POINTS, 0, 2);
 
-        int lx = WIDTH / 4  + static_cast<int>(left.x.raw  / SCALE);
-        int ly = HEIGHT / 2 + static_cast<int>(left.y.raw / SCALE);
-
-        int rx = 3 * WIDTH / 4 + static_cast<int>(right.x.raw / SCALE);
-        int ry = HEIGHT / 2   + static_cast<int>(right.y.raw / SCALE);
-
-        SDL_Rect L{lx - 4, ly - 4, 8, 8};
-        SDL_Rect R{rx - 4, ry - 4, 8, 8};
-
-        SDL_RenderFillRect(renderer, &L);
-        SDL_RenderFillRect(renderer, &R);
-        SDL_RenderPresent(renderer);
-
-        SDL_Delay(16);
-        ++tick;
+        eglSwapBuffers(egl_dpy, surf);
+        usleep(16000);
     }
-
-    std::cout << "left  hash  = 0x" << std::hex << sim_hash(left)  << "\n";
-    std::cout << "right hash  = 0x" << std::hex << sim_hash(right) << "\n";
-
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
-    return 0;
 }

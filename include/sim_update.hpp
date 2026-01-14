@@ -11,6 +11,9 @@
 // =======================================================
 
 inline void sim_update(SimState& state) {
+    // 🔑 REQUIRED: advance canonical time
+    state.tick++;
+
     // Deterministic state integration
     state.x += state.vx;
     state.y += state.vy;
