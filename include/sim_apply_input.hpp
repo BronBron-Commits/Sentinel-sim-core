@@ -2,17 +2,24 @@
 #include "sim_state.hpp"
 #include "sim_input.hpp"
 
+// Apply a single deterministic input event to state
 inline void sim_apply_input(SimState& state, const SimInputEvent& e) {
+    // Convert scalar payload to fixed-point once
+    Fixed v = Fixed::from_double(e.value);
+
     switch (e.type) {
         case InputType::MoveX:
-            state.x += static_cast<int64_t>(e.value);
+            state.x += v;
             break;
+
         case InputType::MoveY:
-            state.y += static_cast<int64_t>(e.value);
+            state.y += v;
             break;
+
         case InputType::MoveZ:
-            state.z += static_cast<int64_t>(e.value);
+            // Z no longer exists — intentionally ignored
             break;
+
         default:
             break;
     }
