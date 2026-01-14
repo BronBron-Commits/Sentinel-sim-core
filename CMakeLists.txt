@@ -65,8 +65,20 @@ target_include_directories(sentinel-sim-visual PRIVATE ${SDL2_INCLUDE_DIRS})
 target_link_libraries(sentinel-sim-visual simcore ${SDL2_LIBRARIES})
 
 add_executable(sentinel-sim-side-by-side
+
     visual/side_by_side.cpp
+
 )
-target_include_directories(sentinel-sim-side-by-side PRIVATE ${SDL2_INCLUDE_DIRS})
-target_link_libraries(sentinel-sim-side-by-side simcore ${SDL2_LIBRARIES})
+
+target_link_libraries(sentinel-sim-side-by-side
+
+    simcore
+
+    X11
+
+    EGL
+
+    GLESv2
+
+)
 

@@ -1,100 +1,104 @@
-#include <SDL.h>
-#include <cstdint>
-#include <iostream>
+#include <EGL/egl.h>
+#include <GLES2/gl2.h>
+#include <X11/Xlib.h>
+#include <cmath>
+#include <unistd.h>
 
-#include "sim_state.hpp"
-#include "sim_update.hpp"
-#include "sim_hash.hpp"
-#include "sim_snapshot.hpp"
-#include "sim_snapshot_ops.hpp"
+static const char *vs_src =
+    "attribute vec2 aPos;\n"
+    "void main() {\n"
+    "  gl_Position = vec4(aPos, 0.0, 1.0);\n"
+    "  gl_PointSize = 16.0;\n"
+    "}\n";
 
-static int fx(const Fixed& v) {
-    return static_cast<int>(v.raw / 1000);
+static const char *fs_src =
+    "precision mediump float;\n"
+    "void main() {\n"
+    "  gl_FragColor = vec4(0.1, 0.8, 1.0, 1.0);\n"
+    "}\n";
+
+static GLuint compile(GLenum type, const char *src) {
+    GLuint s = glCreateShader(type);
+    glShaderSource(s, 1, &src, nullptr);
+    glCompileShader(s);
+    return s;
 }
 
-static void draw_dot(SDL_Renderer* r, int x, int y, SDL_Color c) {
-    SDL_SetRenderDrawColor(r, c.r, c.g, c.b, c.a);
-    SDL_Rect dot{ x - 4, y - 4, 8, 8 };
-    SDL_RenderFillRect(r, &dot);
+static GLuint make_program() {
+    GLuint vs = compile(GL_VERTEX_SHADER, vs_src);
+    GLuint fs = compile(GL_FRAGMENT_SHADER, fs_src);
+    GLuint p = glCreateProgram();
+    glAttachShader(p, vs);
+    glAttachShader(p, fs);
+    glBindAttribLocation(p, 0, "aPos");
+    glLinkProgram(p);
+    glDeleteShader(vs);
+    glDeleteShader(fs);
+    return p;
 }
 
 int main() {
-    SDL_Init(SDL_INIT_VIDEO);
+    Display *dpy = XOpenDisplay(nullptr);
+    Window root = DefaultRootWindow(dpy);
 
-    SDL_Window* window = SDL_CreateWindow(
-        "Deterministic Rollback Demo",
-        SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED,
-        640, 480,
-        0
-    );
+    EGLDisplay egl_dpy = eglGetDisplay((EGLNativeDisplayType)dpy);
+    eglInitialize(egl_dpy, nullptr, nullptr);
 
-    SDL_Renderer* renderer =
-        SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    EGLint cfg_attrs[] = {
+        EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+        EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+        EGL_RED_SIZE, 8, EGL_GREEN_SIZE, 8, EGL_BLUE_SIZE, 8,
+        EGL_NONE
+    };
+    EGLConfig cfg;
+    EGLint n;
+    eglChooseConfig(egl_dpy, cfg_attrs, &cfg, 1, &n);
 
-    SimState left{};
-    SimState right{};
+    XSetWindowAttributes swa;
+    swa.event_mask = ExposureMask | PointerMotionMask | KeyPressMask;
+    Window win = XCreateWindow(dpy, root, 0, 0, 640, 480, 0,
+                               CopyFromParent, InputOutput,
+                               CopyFromParent, CWEventMask, &swa);
+    XMapWindow(dpy, win);
+    XStoreName(dpy, win, "GLES Debug Dots");
 
-    left.vx  = Fixed::from_int(1);
-    right.vx = Fixed::from_int(1);
+    EGLSurface surf = eglCreateWindowSurface(egl_dpy, cfg, (EGLNativeWindowType)win, nullptr);
+    EGLint ctx_attrs[] = {EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE};
+    EGLContext ctx = eglCreateContext(egl_dpy, cfg, EGL_NO_CONTEXT, ctx_attrs);
+    eglMakeCurrent(egl_dpy, surf, surf, ctx);
 
-    SimSnapshot snapshot{};
-    bool snapshot_taken = false;
-    bool diverged       = false;
-    bool rolled_back    = false;
+    GLuint prog = make_program();
+    GLuint vbo;
+    glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
-    constexpr int SNAPSHOT_FRAME  = 40;
-    constexpr int DIVERGE_FRAME   = 60;
-    constexpr int ROLLBACK_FRAME  = 120;
+    float pts[4] = { -0.5f, 0.0f, 0.5f, 0.0f };
+    glBufferData(GL_ARRAY_BUFFER, sizeof(pts), pts, GL_DYNAMIC_DRAW);
 
-    for (int frame = 0; frame < 240; ++frame) {
-        SDL_Event e;
-        while (SDL_PollEvent(&e)) {
-            if (e.type == SDL_QUIT) goto quit;
+    glUseProgram(prog);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+    while (true) {
+        while (XPending(dpy)) {
+            XEvent e;
+            XNextEvent(dpy, &e);
+            if (e.type == KeyPress) return 0;
         }
 
-        sim_update(left);
-        sim_update(right);
+        static float t = 0.0f;
+        t += 0.02f;
+        float moved[4] = {
+            -0.5f + 0.25f * sinf(t),
+             0.5f + 0.25f * cosf(t)
+        };
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(moved), moved);
 
-        if (frame == SNAPSHOT_FRAME && !snapshot_taken) {
-            snapshot = snapshot_state(left);
-            snapshot_taken = true;
-        }
-
-        if (frame == DIVERGE_FRAME && !diverged) {
-            std::cout << "[INJECT] divergence injected\n";
-            right.x += Fixed::from_int(20);
-            diverged = true;
-        }
-
-        if (frame == ROLLBACK_FRAME && !rolled_back) {
-            std::cout << "[ROLLBACK] restoring snapshot\n";
-            restore_state(left,  snapshot);
-            restore_state(right, snapshot);
-            rolled_back = true;
-        }
-
-        SDL_SetRenderDrawColor(renderer, 20, 20, 20, 255);
-        SDL_RenderClear(renderer);
-
-        SDL_Color color =
-            rolled_back ? SDL_Color{0, 255, 0, 255} :
-            diverged    ? SDL_Color{255, 0, 0, 255} :
-                          SDL_Color{0, 200, 255, 255};
-
-        draw_dot(renderer, 160 + fx(left.x),  240 + fx(left.y),  color);
-        draw_dot(renderer, 480 + fx(right.x), 240 + fx(right.y), color);
-
-        SDL_RenderPresent(renderer);
-        SDL_Delay(16);
+        glViewport(0, 0, 640, 480);
+        glClearColor(0.05f, 0.05f, 0.08f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+        glDrawArrays(GL_POINTS, 0, 2);
+        eglSwapBuffers(egl_dpy, surf);
+        usleep(16000);
     }
-
-quit:
-    std::cout << "left  hash  = 0x" << std::hex << sim_hash(left)  << "\n";
-    std::cout << "right hash  = 0x" << std::hex << sim_hash(right) << "\n";
-
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
-    return 0;
 }
