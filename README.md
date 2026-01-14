@@ -1,174 +1,236 @@
 Sentinel Sim Core
 
-A deterministic simulation core with verified snapshotting, rewind, input replay, and network rollback semantics.
-
-This project is not a game engine. It is a correctness-first simulation kernel designed to prove that a simulation can:
-
-Produce identical results across runs
-
-Rewind and replay state exactly
-
-Serialize and replay inputs deterministically
-
-Resolve delayed / out-of-order network inputs via rollback
-
-Detect and surface divergence precisely
-
-
-All guarantees are enforced by executable tests.
+A deterministic simulation core with input logging, rewind, replay, and network rollback verification.
+This project is intentionally minimal and correctness‑first: every simulation step can be reproduced bit‑for‑bit across runs, machines, and peers.
 
 
 ---
 
-Why This Exists
+What this is
 
-Many real-time systems depend on simulations that must not drift:
+Sentinel Sim Core is a lockstep‑friendly simulation kernel designed to prove that:
 
-Multiplayer games with rollback netcode
+The same inputs always produce the same state
 
-Defense and aerospace simulations
+State can be snapshotted and restored exactly
 
-Robotics and autonomy modeling
+Divergent timelines can be rewound and resimulated
 
-Physics-driven control systems
+Network delay can be corrected via rollback
 
-Distributed simulations with partial information
+Determinism can be verified, not assumed
 
 
-Visual fidelity is secondary. Correctness is the product.
+All correctness is enforced using hash convergence tests, not visual inspection.
 
-Sentinel Sim Core exists to demonstrate that correctness can be:
 
-Measured
+---
 
-Tested
+What this is not
 
-Proven
+Not a game engine
 
-Visualized
+Not a physics engine
+
+Not a renderer
+
+Not real‑time network code
+
+
+Those layers are deliberately excluded so determinism is never compromised by timing, floating‑point drift, or platform behavior.
+
+
+---
+
+Core features
+
+Deterministic simulation
+
+Fixed‑step update loop
+
+Fixed‑point state representation
+
+Bit‑stable hashing of full simulation state
+
+
+Snapshot & rewind
+
+Capture full simulation state at any tick
+
+Restore state exactly
+
+Verify correctness via hash equality
+
+
+Input logging & replay
+
+Record time‑stamped input events
+
+Replay logs deterministically
+
+Binary file serialization supported
+
+
+Network rollback simulation
+
+Two peers simulate independently
+
+Inputs are delayed to simulate latency
+
+Divergence is injected intentionally
+
+Rollback + resimulation restores convergence
 
 
 
 ---
 
-Core Guarantees
+Why this matters
 
-The simulation core (simcore) guarantees:
+This is the hard part underneath:
 
-1. Determinism
-Identical initial state + identical inputs ⇒ identical final state hash
+Multiplayer lockstep engines
 
+Rollback netcode (fighting games, RTS)
 
-2. Snapshot / Rewind
-State can be snapshotted and restored with zero loss
+Distributed simulations
 
+Digital twins
 
-3. Input Replay
-Input streams can be replayed in-memory or from disk with identical results
+Verification & validation systems
 
-
-4. Network Rollback
-Late-arriving inputs trigger rollback and resimulation, converging to the same state across peers
+Defense / aerospace / autonomy simulators
 
 
-
-These are not claims — they are verified by tests.
+If this layer is wrong, everything built on top is wrong.
 
 
 ---
 
-Project Structure
+Project layout
 
-include/        # Public simulation interfaces
-src/            # Simulation core implementation
-visual/         # SDL-based visual observers (non-authoritative)
-tests/          # Executable correctness tests
+include/        # Public simulation headers
+src/            # Core implementation
+tests/          # Determinism, rewind, replay, rollback tests
+visual/         # SDL visualizers (optional, non-authoritative)
 build/          # CMake build output
 
-Key design rule:
 
-> Visuals never influence simulation state.
+---
 
+Build
 
-
-They only observe verified results.
+cmake -S . -B build
+cmake --build build
 
 
 ---
 
-Executables
-
-Core Simulation
+Run core simulation
 
 ./build/sentinel-sim-core
 
-Runs a fixed deterministic simulation and prints a state hash.
+Outputs tick count and deterministic state hash.
 
 
 ---
 
-Test Suite (Correctness Proof)
+Run tests
 
 ctest --test-dir build --output-on-failure
 
-Tests include:
+Tests included:
 
-determinism – identical runs produce identical hashes
+determinism
 
-rewind – snapshot and restore correctness
+rewind
 
-input_replay – deterministic input playback
+input replay
 
-input_file_replay – file-backed replay correctness
+input file replay
 
-rollback_network – simulated network delay + rollback convergence
+network rollback
 
 
-All tests must pass for the system to be considered valid.
+All tests must converge on identical hashes.
 
 
 ---
 
-Visual Observers
+Visual demos (non-authoritative)
 
-Single Simulation View
+These are demonstrations, not validation.
 
 ./build/sentinel-sim-visual
-
-Renders a single deterministic simulation run.
-
-
----
-
-Side-by-Side Rollback Visualization
-
 ./build/sentinel-sim-side-by-side
 
-Runs two peers side-by-side. Optionally injects divergence to demonstrate rollback correction.
-
-Outputs state hashes to confirm convergence.
+Side‑by‑side mode intentionally injects divergence, then proves rollback convergence.
 
 
 ---
 
-What This Is (and Is Not)
+Why hashes matter
 
-This is:
+Every test ends with:
 
-A simulation correctness harness
+left_hash == right_hash
 
-A rollback-capable deterministic core
+No screenshots. No heuristics. No tolerance.
 
-A verification-focused system
-
-
-This is not:
-
-A full game engine
-
-A rendering framework
-
-A physics showcase
+If the hash matches, the simulation is correct.
 
 
-Graphics exist only to
+---
+
+Comparable systems
+
+Conceptually similar to:
+
+GGPO rollback model (core logic only)
+
+RTS lockstep simulators
+
+Deterministic physics cores
+
+Defense simulation kernels
+
+
+But implemented as a small, auditable, correctness‑first C++ core.
+
+
+---
+
+Career relevance
+
+This project demonstrates:
+
+Systems programming discipline
+
+Determinism & reproducibility
+
+State verification
+
+Simulation correctness
+
+Rollback architecture
+
+
+These map directly to roles in:
+
+Defense & aerospace
+
+Autonomous systems
+
+Robotics simulation
+
+Distributed systems
+
+Low‑level engine development
+
+
+
+---
+
+License
+
+MIT
