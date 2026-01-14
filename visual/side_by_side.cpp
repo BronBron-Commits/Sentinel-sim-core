@@ -46,6 +46,12 @@ static GLuint make_program() {
 }
 
 // --------------------------------------------------
+struct Snapshot {
+    SimState left;
+    SimState right;
+};
+
+// --------------------------------------------------
 int main() {
     Display *dpy = XOpenDisplay(nullptr);
     Window root = DefaultRootWindow(dpy);
@@ -81,7 +87,7 @@ int main() {
     );
 
     XMapWindow(dpy, win);
-    XStoreName(dpy, win, "Sentinel Sim – Hash View");
+    XStoreName(dpy, win, "Sentinel Sim – Rollback Demo");
 
     EGLSurface surf =
         eglCreateWindowSurface(egl_dpy, cfg,
@@ -107,17 +113,21 @@ int main() {
     GLint uColor = glGetUniformLocation(prog, "uColor");
 
     // --------------------------------------------------
-    // Deterministic simulation state
+    // Simulation state
     // --------------------------------------------------
     SimState left{};
     SimState right{};
 
-    // Start IDENTICAL
-    left.vx = Fixed::from_int(1);
+    left.vx  = Fixed::from_int(1);
     right.vx = Fixed::from_int(1);
 
+    Snapshot last_good{};
+    bool have_snapshot = false;
+    bool rollback_done = false;
+
     uint64_t frame = 0;
-    static constexpr uint64_t DIVERGE_AT = 120; // ~2 seconds @60Hz
+    static constexpr uint64_t DIVERGE_AT = 120;
+    static constexpr uint64_t ROLLBACK_AT = 200;
 
     auto clamp = [](float v) {
         if (v < -0.9f) return -0.9f;
@@ -134,17 +144,35 @@ int main() {
                 return 0;
         }
 
-        // Inject divergence ONCE, deterministically
+        // Inject divergence
         if (frame == DIVERGE_AT) {
             right.vx = Fixed::from_int(-1);
         }
 
+        // Advance sim
         sim_update(left);
         sim_update(right);
 
-        bool hashes_equal = (sim_hash(left) == sim_hash(right));
+        uint64_t hl = sim_hash(left);
+        uint64_t hr = sim_hash(right);
+        bool equal = (hl == hr);
 
-        if (hashes_equal) {
+        // Capture snapshot ONLY when equal
+        if (equal) {
+            last_good.left = left;
+            last_good.right = right;
+            have_snapshot = true;
+        }
+
+        // Trigger rollback once
+        if (!rollback_done && have_snapshot && frame == ROLLBACK_AT) {
+            left  = last_good.left;
+            right = last_good.right;
+            rollback_done = true;
+        }
+
+        // Color
+        if (equal) {
             glUniform4f(uColor, 0.2f, 1.0f, 0.2f, 1.0f); // GREEN
         } else {
             glUniform4f(uColor, 1.0f, 0.2f, 0.2f, 1.0f); // RED
