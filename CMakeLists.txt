@@ -61,3 +61,28 @@ target_link_libraries(sentinel-sim-visual
     simcore
     ${SDL2_LIBRARIES}
 )
+
+add_executable(sentinel-sim-side-by-side
+    visual/side_by_side.cpp
+)
+
+target_link_libraries(sentinel-sim-side-by-side
+    simcore
+    SDL2
+)
+
+# --- SDL2 (Termux / pkg-config) ---
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(SDL2 REQUIRED sdl2)
+
+target_include_directories(sentinel-sim-side-by-side PRIVATE
+    ${SDL2_INCLUDE_DIRS}
+)
+
+target_link_libraries(sentinel-sim-side-by-side
+    ${SDL2_LIBRARIES}
+)
+
+target_compile_options(sentinel-sim-side-by-side PRIVATE
+    ${SDL2_CFLAGS_OTHER}
+)
