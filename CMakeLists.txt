@@ -40,3 +40,24 @@ add_executable(test_input_file_replay
     tests/test_input_file_replay.cpp
 )
 target_link_libraries(test_input_file_replay simcore)
+
+# =========================
+# Visualization executable
+# =========================
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(SDL2 REQUIRED sdl2)
+
+add_executable(sentinel-sim-visual
+    visual/main.cpp
+)
+
+target_include_directories(sentinel-sim-visual PRIVATE
+    include
+    ${SDL2_INCLUDE_DIRS}
+)
+
+target_link_libraries(sentinel-sim-visual
+    simcore
+    ${SDL2_LIBRARIES}
+)
