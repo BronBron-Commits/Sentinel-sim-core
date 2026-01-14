@@ -1,205 +1,107 @@
-Sentinel Sim Core
+# Sentinel Sim Core
 
-A deterministic simulation core with input logging, rewind, replay, and network rollback verification.
-This project is intentionally minimal and correctness‑first: every simulation step can be reproduced bit‑for‑bit across runs, machines, and peers.
+A **deterministic simulation core** with input logging, rewind, replay, and rollback verification.
 
+Sentinel Sim Core is correctness-first by design:
+**the same inputs always produce the same state**, bit-for-bit, across runs, machines, and peers.
 
----
-
-What this is
-
-Sentinel Sim Core is a lockstep‑friendly simulation kernel designed to prove that:
-
-The same inputs always produce the same state
-
-State can be snapshotted and restored exactly
-
-Divergent timelines can be rewound and resimulated
-
-Network delay can be corrected via rollback
-
-Determinism can be verified, not assumed
-
-
-All correctness is enforced using hash convergence tests, not visual inspection.
-
+Determinism is **verified**, not assumed.
 
 ---
 
-What this is not
+## What this is
 
-Not a game engine
+A lockstep-friendly simulation kernel that guarantees:
 
-Not a physics engine
+* Deterministic fixed-step simulation
+* Exact snapshot & restore
+* Input logging and replay
+* Rollback convergence under simulated network delay
+* Hash-based correctness verification
 
-Not a renderer
-
-Not real‑time network code
-
-
-Those layers are deliberately excluded so determinism is never compromised by timing, floating‑point drift, or platform behavior.
-
+All correctness is enforced through **hash equality**, never visual output.
 
 ---
 
-Core features
+## What this is not
 
-Deterministic simulation
+* Not a game engine
+* Not a physics engine
+* Not a renderer
+* Not real-time network code
 
-Fixed‑step update loop
-
-Fixed‑point state representation
-
-Bit‑stable hashing of full simulation state
-
-
-Snapshot & rewind
-
-Capture full simulation state at any tick
-
-Restore state exactly
-
-Verify correctness via hash equality
-
-
-Input logging & replay
-
-Record time‑stamped input events
-
-Replay logs deterministically
-
-Binary file serialization supported
-
-
-Network rollback simulation
-
-Two peers simulate independently
-
-Inputs are delayed to simulate latency
-
-Divergence is injected intentionally
-
-Rollback + resimulation restores convergence
-
-
+Those layers are intentionally excluded to preserve determinism.
 
 ---
 
-Why this matters
+## Core principles
 
-This is the hard part underneath:
+* No floating point in simulation state
+* No platform headers in `simcore`
+* No wall-clock time
+* No hidden side effects
+* Hash equality is the source of truth
 
-Multiplayer lockstep engines
-
-Rollback netcode (fighting games, RTS)
-
-Distributed simulations
-
-Digital twins
-
-Verification & validation systems
-
-Defense / aerospace / autonomy simulators
-
-
-If this layer is wrong, everything built on top is wrong.
-
+If hashes diverge, the simulation is wrong.
 
 ---
 
-Project layout
+## Project layout
 
-include/        # Public simulation headers
-src/            # Core implementation
-tests/          # Determinism, rewind, replay, rollback tests
-visual/         # SDL visualizers (optional, non-authoritative)
-build/          # CMake build output
+```
+include/simcore/   # Public, platform-agnostic API
+src/               # Core implementation
+tests/             # Determinism, rewind, replay, rollback tests
+visual/            # Optional SDL/X11 demos (non-authoritative)
+```
 
+Consumers include **only**:
+
+```cpp
+#include <simcore/simcore.hpp>
+```
 
 ---
 
-Build
+## Build & test
 
+```bash
 cmake -S . -B build
 cmake --build build
-
-
----
-
-Run core simulation
-
-./build/sentinel-sim-core
-
-Outputs tick count and deterministic state hash.
-
-
----
-
-Run tests
-
 ctest --test-dir build --output-on-failure
-
-Tests included:
-
-determinism
-
-rewind
-
-input replay
-
-input file replay
-
-network rollback
-
+```
 
 All tests must converge on identical hashes.
 
-
 ---
 
-Visual demos (non-authoritative)
+## Visual demos (non-authoritative)
 
-These are demonstrations, not validation.
-
+```bash
 ./build/sentinel-sim-visual
 ./build/sentinel-sim-side-by-side
+```
 
-Side‑by‑side mode intentionally injects divergence, then proves rollback convergence.
-
-
----
-
-Why hashes matter
-
-Every test ends with:
-
-left_hash == right_hash
-
-No screenshots. No heuristics. No tolerance.
-
-If the hash matches, the simulation is correct.
-
+Side-by-side mode intentionally injects divergence, then proves rollback convergence.
 
 ---
 
-Comparable systems
+## Why this matters
 
-Conceptually similar to:
+This is the foundation beneath:
 
-GGPO rollback model (core logic only)
+* Multiplayer lockstep engines
+* Rollback netcode
+* Distributed simulations
+* Digital twins
+* Verification-critical systems
 
-RTS lockstep simulators
-
-Deterministic physics cores
-
-Defense simulation kernels
-
-
-But implemented as a small, auditable, correctness‑first C++ core.
-
+If this layer is wrong, **everything above it is wrong**.
 
 ---
 
-License
+## License
 
 MIT
+
+---
