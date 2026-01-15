@@ -3,21 +3,23 @@
 #include <simcore/sim_state.hpp>
 #include <simcore/sim_update.hpp>
 #include <simcore/sim_hash.hpp>
+#include <simcore/sim_initial_state.hpp>
 
-int main() {
-    SimState state{};          // pure state, no tick
-    const uint64_t steps = 1000;
+int main()
+{
+    SimState state = sim_initial_state();
 
-    for (uint64_t tick = 0; tick < steps; ++tick) {
+    for (int i = 0; i < 60; ++i)
+    {
         sim_update(state);
+        uint64_t h = sim_hash(state);
+
+        std::cout
+            << "tick=" << i
+            << " hash=0x"
+            << std::hex << h << std::dec
+            << "\n";
     }
-
-    uint64_t h = sim_hash(state);
-
-    std::cout
-        << "ticks=" << steps
-        << " hash=0x" << std::hex << h << std::dec
-        << "\n";
 
     return 0;
 }
