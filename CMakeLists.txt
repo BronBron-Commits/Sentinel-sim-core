@@ -112,3 +112,18 @@ add_executable(test_checkpointed_rollback tests/test_checkpointed_rollback.cpp)
 target_link_libraries(test_checkpointed_rollback simcore)
 add_test(NAME checkpointed_rollback COMMAND test_checkpointed_rollback)
 
+
+add_executable(test_edge_case_input_stress tests/test_edge_case_input_stress.cpp)
+target_link_libraries(test_edge_case_input_stress simcore)
+add_test(NAME edge_case_input_stress COMMAND test_edge_case_input_stress)
+
+
+add_executable(test_same_tick_order_sensitivity tests/test_same_tick_order_sensitivity.cpp)
+target_link_libraries(test_same_tick_order_sensitivity simcore)
+add_test(NAME same_tick_order_sensitivity COMMAND test_same_tick_order_sensitivity)
+
+
+add_executable(test_unsorted_input_log_equivalence tests/test_unsorted_input_log_equivalence.cpp)
+target_link_libraries(test_unsorted_input_log_equivalence simcore)
+add_test(NAME unsorted_input_log_equivalence COMMAND test_unsorted_input_log_equivalence)
+
