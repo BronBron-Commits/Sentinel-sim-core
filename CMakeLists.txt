@@ -102,3 +102,8 @@ add_executable(test_first_divergence tests/test_first_divergence.cpp)
 target_link_libraries(test_first_divergence simcore)
 add_test(NAME first_divergence COMMAND test_first_divergence)
 
+
+add_executable(test_chaos_rollback_stress tests/test_chaos_rollback_stress.cpp)
+target_link_libraries(test_chaos_rollback_stress simcore)
+add_test(NAME chaos_rollback_stress COMMAND test_chaos_rollback_stress)
+
