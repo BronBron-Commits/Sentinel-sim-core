@@ -97,3 +97,8 @@ set_tests_properties(expected_failure_hash PROPERTIES WILL_FAIL TRUE)
 
 set_tests_properties(expected_failure_hash PROPERTIES WILL_FAIL TRUE)
 
+
+add_executable(test_first_divergence tests/test_first_divergence.cpp)
+target_link_libraries(test_first_divergence simcore)
+add_test(NAME first_divergence COMMAND test_first_divergence)
+
