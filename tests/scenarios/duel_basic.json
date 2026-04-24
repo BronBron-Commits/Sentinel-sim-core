@@ -1,0 +1,9 @@
+{
+  "seed": 123,
+  "ticks": 120,
+  "inputs": [
+    { "tick": 10, "player": 1, "type": 1 },
+    { "tick": 20, "player": 2, "type": 2 }
+  ],
+  "expected_hash": 0
+}
