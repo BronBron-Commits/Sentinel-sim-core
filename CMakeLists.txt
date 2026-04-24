@@ -107,3 +107,8 @@ add_executable(test_chaos_rollback_stress tests/test_chaos_rollback_stress.cpp)
 target_link_libraries(test_chaos_rollback_stress simcore)
 add_test(NAME chaos_rollback_stress COMMAND test_chaos_rollback_stress)
 
+
+add_executable(test_checkpointed_rollback tests/test_checkpointed_rollback.cpp)
+target_link_libraries(test_checkpointed_rollback simcore)
+add_test(NAME checkpointed_rollback COMMAND test_checkpointed_rollback)
+
